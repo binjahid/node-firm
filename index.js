@@ -22,6 +22,7 @@ const replaceTemplate = (temp, product) => {
   output = output.replace(/{%IMAGE%}/g, product.image);
   output = output.replace(/{%PRICE%}/g, product.price);
   output = output.replace(/{%QUANTITY%}/g, product.quantity);
+  output = output.replace(/{%ID%}/g, product.id);
   if (!product.organic) {
     output = output.replace(/{%NOT_ORGANIC%}/g, "not-organic");
   }
@@ -35,18 +36,26 @@ const overview = fs.readFileSync(
   "utf-8"
 );
 const card = fs.readFileSync(`${__dirname}/templates/card.html`, "utf-8");
-const product = fs.readFileSync(`${__dirname}/templates/product.html`, "utf-8");
+const singleProduct = fs.readFileSync(
+  `${__dirname}/templates/product.html`,
+  "utf-8"
+);
 http
   .createServer((req, res) => {
-    if (req.url === "/" || req.url === "/overview") {
+    const { query, pathname } = url.parse(req.url, true);
+
+    if (pathname === "/" || req.url === "/overview") {
       res.writeHead(200, { "Content-type": "text/html" });
       const cardsHtml = dataObj.map((el) => replaceTemplate(card, el));
       const output = overview.replace("{%PRODUCTCARD%}", cardsHtml);
       res.end(output);
-    } else if (req.url === "/api") {
+    } else if (pathname === "/api") {
       res.end(data);
-    } else if (req.url === "/product") {
-      res.end("This is the product");
+    } else if (pathname === "/product") {
+      res.writeHead(200, { "Content-type": "text/html" });
+      const product = dataObj[query.id];
+      const output = replaceTemplate(singleProduct, product);
+      res.end(output);
     } else {
       res.writeHead(404, { "Content-Type": "text/html" });
       res.end("<h1>404 Page not found</h1>");
